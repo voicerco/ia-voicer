@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA Voicer</title>
+<style>
+:root {
+  --gold: #C9924A;
+  --gold-light: rgba(201,146,74,0.09);
+  --gold-border: rgba(201,146,74,0.22);
+  --red: #D93025;
+  --red-hover: #C0271F;
+  --green: #1A7F3C;
+  --bg: #F5F5F7;
+  --white: #FFFFFF;
+  --text: #1D1D1F;
+  --text-2: #6E6E73;
+  --text-3: #AEAEB2;
+  --border: rgba(0,0,0,0.07);
+  --border-m: rgba(0,0,0,0.11);
+  --radius: 20px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
+  --shadow: 0 2px 16px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-hover: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.06);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;}
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;animation:fadeUp .36s cubic-bezier(.4,0,.2,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── HOME ─── */
+#home{align-items:center;justify-content:center;padding:90px 24px 100px;}
+.home-label{font-size:13px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;text-align:center;}
+.home-title{font-size:clamp(48px,9vw,80px);font-weight:700;letter-spacing:-.03em;color:var(--text);text-align:center;line-height:1.02;margin-bottom:16px;}
+.home-title .accent{background:linear-gradient(140deg,#C9924A 0%,#E8B87A 60%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.home-body{font-size:17px;font-weight:400;color:var(--text-2);text-align:center;line-height:1.52;max-width:340px;margin:0 auto 56px;}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;width:100%;max-width:960px;}
+.h-card{background:var(--white);border-radius:var(--radius);padding:28px 26px;cursor:pointer;box-shadow:var(--shadow);transition:transform .26s cubic-bezier(.4,0,.2,1),box-shadow .26s;text-align:left;}
+.h-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover);}
+.h-card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px;background:var(--bg);}
+.h-card-title{font-size:17px;font-weight:600;letter-spacing:-.016em;color:var(--text);margin-bottom:7px;line-height:1.25;}
+.h-card-desc{font-size:13.5px;color:var(--text-2);line-height:1.57;}
+.h-card-link{margin-top:14px;font-size:13px;font-weight:500;color:var(--gold);display:inline-flex;align-items:center;gap:3px;}
+
+/* ─── SUB SCREENS ─── */
+.sub-wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 24px 0;}
+
+/* top nav — only on sub screens, NOT simulator */
+.nav-row{width:100%;max-width:820px;padding:22px 0 0;margin-bottom:44px;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:400;color:var(--gold);cursor:pointer;border:none;background:none;padding:0;transition:opacity .18s;}
+.back-btn:hover{opacity:.7;}
+.back-btn::before{content:'‹';font-size:20px;line-height:1;margin-top:-1px;}
+
+.sub-hd{width:100%;max-width:820px;margin-bottom:30px;}
+.sub-eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px;}
+.sub-title{font-size:clamp(28px,5vw,46px);font-weight:700;letter-spacing:-.025em;color:var(--text);line-height:1.1;margin-bottom:10px;}
+.sub-caption{font-size:15px;color:var(--text-2);line-height:1.55;max-width:480px;}
+
+.sub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;width:100%;max-width:820px;}
+.s-card{background:var(--white);border-radius:var(--radius-sm);padding:22px 20px 20px;cursor:pointer;box-shadow:var(--shadow);transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;position:relative;display:flex;flex-direction:column;}
+.s-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover);}
+.s-card.off{opacity:.46;cursor:default;}
+.s-card.off:hover{transform:none;box-shadow:var(--shadow);}
+.s-icon{font-size:22px;margin-bottom:10px;}
+.s-title{font-size:14.5px;font-weight:600;letter-spacing:-.013em;color:var(--text);line-height:1.3;margin-bottom:5px;}
+.s-desc{font-size:13px;color:var(--text-2);line-height:1.52;flex:1;}
+.ai-tag{display:inline-flex;align-items:center;gap:4px;margin-top:12px;background:var(--gold-light);border:1px solid var(--gold-border);border-radius:30px;padding:4px 10px;font-size:10.5px;font-weight:600;color:var(--gold);width:fit-content;letter-spacing:.01em;}
+.ai-dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
+
+/* sub-screen footer — left-aligned pill button */
+.sub-footer{width:100%;max-width:820px;padding:28px 0 56px;margin-top:auto;}
+.btn-back-foot{display:inline-flex;align-items:center;gap:8px;background:var(--white);border:1.5px solid var(--border-m);border-radius:50px;padding:10px 20px 10px 14px;font-family:var(--font);font-size:14px;font-weight:500;color:var(--text-2);cursor:pointer;box-shadow:var(--shadow);transition:all .2s ease;}
+.btn-back-foot:hover{border-color:var(--gold);color:var(--gold);box-shadow:var(--shadow-hover);}
+.back-circle{width:26px;height:26px;border-radius:50%;background:var(--bg);border:1px solid var(--border-m);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-2);transition:all .2s;}
+.btn-back-foot:hover .back-circle{background:var(--gold-light);border-color:var(--gold-border);color:var(--gold);}
+
+/* ─── SIMULATOR ─── */
+#sim-screen{background:var(--bg);}
+
+/* NO top nav bar in simulator — removed entirely */
+
+.sim-body{flex:1;padding:44px 24px 80px;max-width:660px;width:100%;margin:0 auto;}
+.sim-step{display:none;}
+.sim-step.active{display:block;animation:fadeUp .28s ease both;}
+.sn{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
+.sh{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.024em;color:var(--text);line-height:1.1;margin-bottom:8px;}
+.sc{font-size:15px;color:var(--text-2);line-height:1.52;margin-bottom:36px;}
+
+/* step progress — inline at top of sim-body */
+.sim-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;}
+.pips{display:flex;align-items:center;gap:4px;}
+.pip{height:4px;border-radius:2px;background:#D1D1D6;transition:all .32s ease;}
+.pip.on{background:var(--gold);width:22px;}
+.pip.done{background:var(--gold);opacity:.35;width:8px;}
+.pip.off{width:8px;}
+.sim-scene-lbl{font-size:13px;font-weight:500;color:var(--text-3);letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;}
+
+.fs{margin-bottom:26px;}
+.fl{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-2);margin-bottom:11px;display:flex;align-items:center;gap:6px;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.fl-note{font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3);}
+.tags{display:flex;flex-wrap:wrap;gap:7px;}
+
+.tag{display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1.5px solid var(--border-m);border-radius:50px;padding:7px 14px;font-family:var(--font);font-size:13.5px;font-weight:400;color:var(--text-2);cursor:pointer;transition:all .16s ease;user-select:none;white-space:nowrap;}
+.tag:hover{border-color:var(--gold);color:var(--text);background:var(--gold-light);}
+.tag.sel{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:500;}
+.tag.sel:hover{background:#B8823A;border-color:#B8823A;}
+.tag-del{display:none;width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.28);align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:background .14s;}
+.tag.sel .tag-del{display:inline-flex;}
+.tag-del:hover{background:rgba(255,255,255,.5);}
+
+.add-row{display:flex;gap:8px;margin-top:9px;}
+input[type=text],textarea{width:100%;border:1.5px solid var(--border-m);border-radius:var(--radius-xs);padding:13px 15px;font-family:var(--font);font-size:15px;color:var(--text);background:var(--white);outline:none;resize:none;transition:border-color .18s,box-shadow .18s;-webkit-font-smoothing:antialiased;}
+input[type=text]:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,146,74,.11);}
+input::placeholder,textarea::placeholder{color:var(--text-3);}
+.btn-tiny{background:var(--white);border:1.5px solid var(--border-m);border-radius:var(--radius-xs);padding:0 15px;height:46px;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;white-space:nowrap;transition:all .16s;}
+.btn-tiny:hover{border-color:var(--gold);color:var(--gold);}
+.err{font-size:12px;color:#FF3B30;margin-top:7px;display:none;}
+
+/* step nav */
+.step-nav{margin-top:40px;display:flex;flex-direction:column;gap:12px;}
+.btn-p{width:100%;background:var(--gold);border:none;border-radius:50px;padding:17px 24px;font-family:var(--font);font-size:15px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s ease;letter-spacing:-.005em;}
+.btn-p:hover{background:#B8823A;box-shadow:0 4px 20px rgba(201,146,74,.28);}
+
+/* secondary nav — pill buttons in a row */
+.nav-pills{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn-nav-pill{display:inline-flex;align-items:center;gap:7px;background:var(--white);border:1.5px solid var(--border-m);border-radius:50px;padding:9px 16px 9px 10px;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;box-shadow:var(--shadow);transition:all .2s ease;}
+.btn-nav-pill:hover{border-color:var(--gold);color:var(--gold);box-shadow:var(--shadow-hover);}
+.pill-circle{width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border-m);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-3);transition:all .2s;flex-shrink:0;}
+.btn-nav-pill:hover .pill-circle{background:var(--gold-light);border-color:var(--gold-border);color:var(--gold);}
+
+/* result */
+.result-box{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px;}
+.result-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);}
+.result-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);}
+.prompt-txt{padding:18px;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px;line-height:1.8;color:var(--text);background:#FAFAFA;white-space:pre-wrap;word-break:break-word;max-height:240px;overflow-y:auto;}
+
+/* launch */
+.step-labels{display:flex;gap:10px;margin-bottom:6px;}
+.step-label{flex:1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);text-align:center;}
+.step-label.active-lbl{color:var(--red);}
+.step-label.done-lbl{color:var(--green);}
+
+.launch-area{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+
+.btn-copy{width:100%;border:none;border-radius:50px;padding:17px 24px;font-family:var(--font);font-size:15px;font-weight:600;color:#fff;cursor:pointer;letter-spacing:-.005em;display:flex;align-items:center;justify-content:center;gap:9px;transition:background .3s ease,box-shadow .3s ease,transform .2s ease;background:var(--red);box-shadow:0 4px 24px rgba(217,48,37,.28);}
+.btn-copy:hover{background:var(--red-hover);box-shadow:0 6px 28px rgba(217,48,37,.35);transform:translateY(-1px);}
+.btn-copy.copied{background:var(--green);box-shadow:0 4px 20px rgba(26,127,60,.25);}
+.btn-copy.copied:hover{background:#166834;}
+
+.btn-open{width:100%;border:1.5px solid var(--border-m);background:var(--white);border-radius:50px;padding:15px 24px;font-family:var(--font);font-size:15px;font-weight:500;color:var(--text-3);cursor:default;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow);transition:all .3s ease;}
+.btn-open.ready{background:var(--red);border-color:var(--red);color:#fff;cursor:pointer;font-weight:600;box-shadow:0 4px 24px rgba(217,48,37,.28);animation:pulse 1.8s ease-in-out infinite;}
+.btn-open.ready:hover{background:var(--red-hover);border-color:var(--red-hover);transform:translateY(-1px);animation:none;box-shadow:0 6px 28px rgba(217,48,37,.35);}
+@keyframes pulse{0%,100%{box-shadow:0 4px 24px rgba(217,48,37,.28)}50%{box-shadow:0 4px 34px rgba(217,48,37,.52)}}
+
+.tip{background:rgba(201,146,74,.07);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:14px 18px;font-size:13.5px;color:#7A5428;line-height:1.6;margin-bottom:16px;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#C7C7CC;border-radius:10px;}
+</style>
+</head>
+<body>
+
+<!-- ════════════ HOME ════════════ -->
+<div class="screen active" id="home">
+  <p class="home-label">Voicer</p>
+  <h1 class="home-title">IA <span class="accent">Voicer</span></h1>
+  <p class="home-body">IA ao lado. Sua voz à frente.</p>
+
+  <div class="home-grid">
+    <div class="h-card" onclick="goto('sim-menu')">
+      <div class="h-card-icon">🎙</div>
+      <div class="h-card-title">Simulador Profissional</div>
+      <div class="h-card-desc">Pratique situações reais sob pressão e receba feedback preciso para evoluir sua comunicação.</div>
+      <div class="h-card-link">Começar treino →</div>
+    </div>
+    <div class="h-card" onclick="goto('rot-menu')">
+      <div class="h-card-icon">✍️</div>
+      <div class="h-card-title">Roteiros & Apresentações</div>
+      <div class="h-card-desc">Monte roteiros para apresentações e vídeos de impacto.</div>
+      <div class="h-card-link">Criar roteiro →</div>
+    </div>
+    <div class="h-card" onclick="goto('marca-menu')">
+      <div class="h-card-icon">◈</div>
+      <div class="h-card-title">Posicionamento de Marca</div>
+      <div class="h-card-desc">Construa seu pitch profissional, crie um método exclusivo e valide sua esteira de produtos.</div>
+      <div class="h-card-link">Posicionar marca →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SIMULADOR MENU ════════════ -->
+<div class="screen" id="sim-menu">
+  <div class="sub-wrap">
+    <div class="nav-row">
+      <button class="back-btn" onclick="goto('home')">Início</button>
+    </div>
+    <div class="sub-hd">
+      <div class="sub-eyebrow">Simulador Profissional</div>
+      <h2 class="sub-title">Qual situação<br>quer treinar?</h2>
+      <div class="ai-tag" style="margin-bottom:14px"><span class="ai-dot"></span>Apolo</div>
+      <p class="sub-caption">Escolha o cenário. A IA entra no papel e vai te desafiar de verdade — sem facilitar.</p>
+    </div>
+    <div class="sub-grid">
+      <div class="s-card" onclick="startSim('inversao')">
+        <div class="s-icon">🔄</div>
+        <div class="s-title">No lugar do cliente</div>
+        <div class="s-desc">Veja sua oferta pelos olhos de quem compra. Treino de empatia e clareza de valor.</div>
+      </div>
+      <div class="s-card" onclick="startSim('vendas')">
+        <div class="s-icon">🤝</div>
+        <div class="s-title">Discurso de vendas</div>
+        <div class="s-desc">Conduza uma conversa de venda do início ao fim — com fluidez, escuta e fechamento natural.</div>
+      </div>
+      <div class="s-card" onclick="startSim('objecoes')">
+        <div class="s-icon">⚡️</div>
+        <div class="s-title">Rodada de objeções</div>
+        <div class="s-desc">Preço, prazo, prioridade. Treine rapidez e repertório quando o terreno é difícil.</div>
+      </div>
+      <div class="s-card" onclick="startSim('frustrado')">
+        <div class="s-icon">🌡</div>
+        <div class="s-title">Cliente frustrado</div>
+        <div class="s-desc">Aprenda a manter a postura quando o outro lado está no limite — e sair com a relação intacta.</div>
+      </div>
+      <div class="s-card" onclick="startSim('lideranca')">
+        <div class="s-icon">🏛</div>
+        <div class="s-title">Apresentação para liderança</div>
+        <div class="s-desc">Defenda sua ideia diante de quem decide — com autoridade, síntese e argumentos sólidos.</div>
+      </div>
+      <div class="s-card" onclick="startSim('feedback')">
+        <div class="s-icon">💬</div>
+        <div class="s-title">Feedback difícil</div>
+        <div class="s-desc">Diga o que precisa ser dito — com clareza, cuidado e sem perder o fio da conversa.</div>
+      </div>
+    </div>
+    <div class="sub-footer">
+      <button class="btn-back-foot" onclick="goto('home')">
+        <span class="back-circle">‹</span>
+        Página inicial
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ ROTEIROS MENU ════════════ -->
+<div class="screen" id="rot-menu">
+  <div class="sub-wrap">
+    <div class="nav-row">
+      <button class="back-btn" onclick="goto('home')">Início</button>
+    </div>
+    <div class="sub-hd">
+      <div class="sub-eyebrow">Roteiros & Apresentações</div>
+      <h2 class="sub-title">O que você<br>quer criar?</h2>
+      <p class="sub-caption">Monte roteiros para apresentações e vídeos de impacto.</p>
+    </div>
+    <div class="sub-grid">
+      <div class="s-card" onclick="openLink('atena')">
+        <div class="s-icon">🎯</div>
+        <div class="s-title">Apresentação de impacto</div>
+        <div class="s-desc">Crie ou revise roteiros para palestras, slides e apresentações que constroem autoridade real.</div>
+        <div class="ai-tag"><span class="ai-dot"></span>Atena</div>
+      </div>
+      <div class="s-card" onclick="openLink('hermes')">
+        <div class="s-icon">📱</div>
+        <div class="s-title">Vídeos & Stories</div>
+        <div class="s-desc">Crie ou revise scripts para conteúdo digital com ganchos que prendem e CTA que converte.</div>
+        <div class="ai-tag"><span class="ai-dot"></span>Hermes</div>
+      </div>
+    </div>
+    <div class="sub-footer">
+      <button class="btn-back-foot" onclick="goto('home')">
+        <span class="back-circle">‹</span>
+        Página inicial
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ MARCA MENU ════════════ -->
+<div class="screen" id="marca-menu">
+  <div class="sub-wrap">
+    <div class="nav-row">
+      <button class="back-btn" onclick="goto('home')">Início</button>
+    </div>
+    <div class="sub-hd">
+      <div class="sub-eyebrow">Posicionamento de Marca</div>
+      <h2 class="sub-title">Construa sua<br>identidade.</h2>
+      <p class="sub-caption">Construa seu pitch profissional, crie um método exclusivo e valide sua esteira de produtos.</p>
+    </div>
+    <div class="sub-grid">
+      <div class="s-card" onclick="openLink('afrodite')">
+        <div class="s-icon">✦</div>
+        <div class="s-title">Marca pessoal</div>
+        <div class="s-desc">Construa seu pitch, posicionamento e storytelling que atrai os clientes certos.</div>
+        <div class="ai-tag"><span class="ai-dot"></span>Afrodite</div>
+      </div>
+      <div class="s-card" onclick="openLink('artemis')">
+        <div class="s-icon">⬡</div>
+        <div class="s-title">Método & autoridade</div>
+        <div class="s-desc">Crie um método exclusivo e transforme sua experiência em um framework de mercado.</div>
+        <div class="ai-tag"><span class="ai-dot"></span>Ártemis</div>
+      </div>
+      <div class="s-card" onclick="openLink('zeus')">
+        <div class="s-icon">◎</div>
+        <div class="s-title">Esteira de produtos</div>
+        <div class="s-desc">Valide e estruture sua jornada de produtos — do nível de entrada ao premium.</div>
+        <div class="ai-tag"><span class="ai-dot"></span>Zeus</div>
+      </div>
+    </div>
+    <div class="sub-footer">
+      <button class="btn-back-foot" onclick="goto('home')">
+        <span class="back-circle">‹</span>
+        Página inicial
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SIMULATOR — NO TOP NAV ════════════ -->
+<div class="screen" id="sim-screen">
+  <div class="sim-body">
+
+    <!-- STEP 1 -->
+    <div class="sim-step active" id="s1">
+      <div class="sim-top">
+        <div class="pips">
+          <div class="pip on"  id="p1"></div>
+          <div class="pip off" id="p2"></div>
+          <div class="pip off" id="p3"></div>
+        </div>
+        <div class="sim-scene-lbl" id="scene-label"></div>
+      </div>
+
+      <div class="sn">Passo 1 de 3</div>
+      <h2 class="sh">Com quem você<br>vai conversar?</h2>
+      <p class="sc">Defina o perfil da outra pessoa — cargo e comportamento. Isso molda toda a simulação.</p>
+
+      <div class="fs">
+        <div class="fl"><span class="dot"></span> Cargo ou papel</div>
+        <div class="tags" id="cargo-tags">
+          <span class="tag" onclick="one('cargo',this)">Liderança<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Cliente<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Investidor<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Recrutador<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Fornecedor<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Sócio<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Liderado<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Par de equipe<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+          <span class="tag" onclick="one('cargo',this)">Decisor de compra<span class="tag-del" onclick="delBuiltOne(event,'cargo',this)">×</span></span>
+        </div>
+        <div class="add-row">
+          <input type="text" id="cargo-in" placeholder="Outro cargo ou papel..." />
+          <button class="btn-tiny" onclick="addOne('cargo')">Adicionar</button>
+        </div>
+        <div class="err" id="e-cargo">Selecione ou adicione um cargo.</div>
+      </div>
+
+      <div class="fs">
+        <div class="fl"><span class="dot"></span> Como ela se comporta? <span class="fl-note">até 3</span></div>
+        <div class="tags" id="pers-tags">
+          <span class="tag" onclick="many('pers',this,3)">Evita conflito<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Direto<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Cético<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Questionador<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Impaciente<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Exigente<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Técnico<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Emocional<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Indeciso<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Resistente<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Desconfiado<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Prolixo<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Dominador<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Frio<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Passivo-agressivo<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Hipersensível<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Defensivo<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Amplificador<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Evasivo<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Contornador<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Diplomata<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Ambíguo<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Postergador<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+          <span class="tag" onclick="many('pers',this,3)">Descomprometido<span class="tag-del" onclick="delBuiltMany(event,'pers',this)">×</span></span>
+        </div>
+        <div class="add-row">
+          <input type="text" id="pers-in" placeholder="Outro comportamento..." />
+          <button class="btn-tiny" onclick="addMany('pers',3)">Adicionar</button>
+        </div>
+        <div class="err" id="e-pers">Escolha ao menos 1 comportamento.</div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-p" onclick="go(2)">Continuar →</button>
+        <div class="nav-pills">
+          <button class="btn-nav-pill" onclick="goto('sim-menu')">
+            <span class="pill-circle">‹</span>Novo cenário
+          </button>
+          <button class="btn-nav-pill" onclick="goto('home')">
+            <span class="pill-circle">⌂</span>Página inicial
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="sim-step" id="s2">
+      <div class="sim-top">
+        <div class="pips">
+          <div class="pip done" id="p1b"></div>
+          <div class="pip on"   id="p2b"></div>
+          <div class="pip off"  id="p3b"></div>
+        </div>
+        <div class="sim-scene-lbl" id="scene-label-2"></div>
+      </div>
+
+      <div class="sn">Passo 2 de 3</div>
+      <h2 class="sh">Conte sobre<br>a situação.</h2>
+      <p class="sc">Quanto mais contexto você trouxer, mais real e útil será o treino.</p>
+
+      <div class="fs">
+        <div class="fl"><span class="dot"></span> O que você vende ou faz?</div>
+        <input type="text" id="setor" placeholder="ex: vendo curso de oratória para líderes, faço consultoria de RH, sou coach de carreira..." />
+      </div>
+
+      <div class="fs">
+        <div class="fl"><span class="dot"></span> O que você quer conseguir nessa conversa?</div>
+        <textarea id="objetivo" rows="3" placeholder="ex: fechar a proposta, conseguir o sim do cliente, dar um feedback sem gerar conflito, defender meu projeto..."></textarea>
+        <div class="err" id="e-obj">Descreva o que você quer conseguir para continuar.</div>
+      </div>
+
+      <div class="fs">
+        <div class="fl">Tudo que você sabe sobre essa situação <span class="fl-note">quanto mais, melhor</span></div>
+        <textarea id="contexto" rows="6" placeholder="Traga tudo: quem é essa pessoa, o histórico entre vocês, o que ela já sabe ou não sabe, o que pode estar travando, o que já foi dito antes, o que você teme falar, tensões do ambiente... Cada detalhe torna a simulação mais precisa e o treino mais valioso."></textarea>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-p" onclick="go(3)">Gerar minha simulação →</button>
+        <div class="nav-pills">
+          <button class="btn-nav-pill" onclick="go(1)">
+            <span class="pill-circle">‹</span>Voltar à edição
+          </button>
+          <button class="btn-nav-pill" onclick="goto('sim-menu')">
+            <span class="pill-circle">‹</span>Novo cenário
+          </button>
+          <button class="btn-nav-pill" onclick="goto('home')">
+            <span class="pill-circle">⌂</span>Página inicial
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="sim-step" id="s3">
+      <div class="sim-top">
+        <div class="pips">
+          <div class="pip done"></div>
+          <div class="pip done"></div>
+          <div class="pip on"></div>
+        </div>
+        <div class="sim-scene-lbl" id="scene-label-3"></div>
+      </div>
+
+      <div class="sn">Passo 3 de 3</div>
+      <h2 class="sh">Sua simulação<br>está pronta.</h2>
+      <p class="sc">Dois passos e você começa.</p>
+
+      <div class="result-box">
+        <div class="result-top">
+          <div class="result-label">Contexto da simulação</div>
+        </div>
+        <div class="prompt-txt" id="ptxt"></div>
+      </div>
+
+      <div class="step-labels">
+        <div class="step-label active-lbl" id="lbl1">① Copiar</div>
+        <div class="step-label" id="lbl2">② Abrir e colar</div>
+      </div>
+
+      <div class="launch-area">
+        <button class="btn-copy" id="bcopy" onclick="cpCopy()">
+          <span id="cicon">📋</span>
+          <span id="clabel">Clique aqui e copie o texto da simulação</span>
+        </button>
+        <button class="btn-open" id="bopen" onclick="openApolo()">
+          <span id="oicon">↗</span>
+          <span id="olabel">Abrir o Simulador Voicer e colar o texto lá</span>
+        </button>
+      </div>
+
+      <div class="tip">
+        O Simulador Voicer, chamado Apolo, já sabe o que fazer. Basta colar o texto da simulação e começar a conversa. Ao final, você receberá um feedback completo para sua evolução! Bora?
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="step-nav">
+        <div class="nav-pills">
+          <button class="btn-nav-pill" onclick="go(2)">
+            <span class="pill-circle">‹</span>Voltar à edição
+          </button>
+          <button class="btn-nav-pill" onclick="goto('sim-menu')">
+            <span class="pill-circle">‹</span>Novo cenário
+          </button>
+          <button class="btn-nav-pill" onclick="goto('home')">
+            <span class="pill-circle">⌂</span>Página inicial
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const LINKS = {
+  apolo:   'https://chatgpt.com/g/g-69dbff528f688191961c7358a9dd39c9-apolo-vo-simulador-roleplay',
+  atena:   'https://chatgpt.com/g/g-68d7f544aaa88191bc1d9379746929f6-atena-vo-roteiros-e-apresentacoes-persuasivas',
+  hermes:  'https://chatgpt.com/g/g-695e964bc118819192fe44d9b9456a48-hermes-vo-escrita-estrategica',
+  afrodite:'https://chatgpt.com/g/g-693a046c97988191bb7f9dd3f6cfb432-afrodite-vo-marca-pessoal-e-diferenciacao',
+  artemis: 'https://chatgpt.com/g/g-6967c0a71b988191a5a113ea61fa8269-artemis-vo-metodo-autentico-para-negocios',
+  zeus:    'https://chatgpt.com/g/g-6967bd842664819182b9003cfb14e219-zeus-vo-esteira-de-produtos-estrategicos',
+};
+
+const SCENES = {
+  inversao:  { lbl:'No lugar do cliente',         ctx:'Cenário de inversão de papéis: o aluno vai simular o papel de cliente, enquanto você (IA) atua como o vendedor ou prestador de serviço dele. O objetivo é que o aluno enxergue sua própria oferta do outro lado — o que convence, o que confunde e o que falta.' },
+  vendas:    { lbl:'Discurso de vendas',           ctx:'Cenário de venda consultiva: o aluno vai conduzir uma conversa de venda — da abordagem à qualificação e encaminhamento ao fechamento. Você (IA) atua como cliente potencial.' },
+  objecoes:  { lbl:'Rodada de objeções',           ctx:'Cenário de pressão: você (IA) vai levantar objeções reais em sequência — preço, prazo, prioridade, concorrência. O aluno treina responder com rapidez, repertório e compostura.' },
+  frustrado: { lbl:'Cliente frustrado',            ctx:'Cenário de crise: você (IA) representa um cliente insatisfeito com atraso, erro ou custo inesperado. O aluno precisa conduzir a conversa com firmeza, empatia e foco em preservar a relação.' },
+  lideranca: { lbl:'Apresentação para liderança', ctx:'Cenário executivo: o aluno vai apresentar uma ideia, projeto ou proposta. Você (IA) representa uma liderança ou comitê exigente — vai questionar, pressionar e testar a solidez dos argumentos.' },
+  feedback:  { lbl:'Feedback difícil',             ctx:'Cenário de liderança: o aluno conduz uma conversa de feedback com alguém do time sobre comportamento ou performance. Você (IA) representa a pessoa recebendo o feedback.' },
+};
+
+const S = { scene:'', cargo:'', pers:[], setor:'', obj:'', ctx:'' };
+let hasCopied = false;
+
+function goto(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function openLink(key){ window.open(LINKS[key],'_blank'); }
+function openApolo(){ if(hasCopied) window.open(LINKS.apolo,'_blank'); }
+
+function startSim(key){
+  S.scene=key; S.cargo=''; S.pers=[]; hasCopied=false;
+  document.querySelectorAll('#cargo-tags .tag,#pers-tags .tag').forEach(t=>t.classList.remove('sel'));
+  document.querySelectorAll('#cargo-tags .custom-tag,#pers-tags .custom-tag').forEach(t=>t.remove());
+  ['cargo-in','pers-in','setor','objetivo','contexto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const lbl = SCENES[key].lbl;
+  ['scene-label','scene-label-2','scene-label-3'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=lbl;
+  });
+  go(1); goto('sim-screen');
+}
+
+function go(n){
+  if(n===2){
+    let ok=true;
+    if(!S.cargo){show('e-cargo');ok=false;}else{hide('e-cargo');}
+    if(!S.pers.length){show('e-pers');ok=false;}else{hide('e-pers');}
+    if(!ok)return;
+  }
+  if(n===3){
+    const o=document.getElementById('objetivo').value.trim();
+    if(!o){show('e-obj');return;}
+    hide('e-obj');
+    S.setor=document.getElementById('setor').value.trim();
+    S.obj=o;
+    S.ctx=document.getElementById('contexto').value.trim();
+    buildPrompt(); resetLaunch();
+  }
+  document.querySelectorAll('.sim-step').forEach((el,i)=>el.classList.toggle('active',i===n-1));
+  window.scrollTo(0,0);
+}
+
+function show(id){document.getElementById(id).style.display='block';}
+function hide(id){document.getElementById(id).style.display='none';}
+
+function getLbl(el){ return el.childNodes[0].textContent.trim(); }
+function one(f,el){
+  S[f]=getLbl(el);
+  document.querySelectorAll(`#${f}-tags .tag`).forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function many(f,el,max){
+  const v=getLbl(el);
+  if(el.classList.contains('sel')){el.classList.remove('sel');S[f]=S[f].filter(x=>x!==v);}
+  else{if(S[f].length>=max)return;el.classList.add('sel');S[f].push(v);}
+}
+function delBuiltOne(e,f,btn){
+  e.stopPropagation();
+  const tag=btn.closest('.tag');
+  if(tag.classList.contains('sel')){tag.classList.remove('sel');S[f]='';}
+}
+function delBuiltMany(e,f,btn){
+  e.stopPropagation();
+  const tag=btn.closest('.tag');
+  if(!tag.classList.contains('sel'))return;
+  const v=getLbl(tag); tag.classList.remove('sel'); S[f]=S[f].filter(x=>x!==v);
+}
+function addOne(f){
+  const inp=document.getElementById(`${f}-in`); const v=inp.value.trim(); if(!v)return;
+  S[f]=v;
+  const wrap=document.getElementById(`${f}-tags`);
+  wrap.querySelectorAll('.tag').forEach(t=>t.classList.remove('sel'));
+  const found=[...wrap.querySelectorAll('.tag')].find(t=>getLbl(t).toLowerCase()===v.toLowerCase());
+  if(found){found.classList.add('sel');}else{wrap.appendChild(makeCustomOne(f,v));}
+  inp.value='';
+}
+function addMany(f,max){
+  const inp=document.getElementById(`${f}-in`); const v=inp.value.trim(); if(!v||S[f].length>=max)return;
+  const wrap=document.getElementById(`${f}-tags`);
+  const found=[...wrap.querySelectorAll('.tag')].find(t=>getLbl(t).toLowerCase()===v.toLowerCase());
+  if(found){if(!found.classList.contains('sel')){found.classList.add('sel');S[f].push(getLbl(found));}}
+  else{S[f].push(v);wrap.appendChild(makeCustomMany(f,v,max));}
+  inp.value='';
+}
+function makeCustomOne(f,v){
+  const t=document.createElement('span'); t.className='tag custom-tag sel';
+  const txt=document.createTextNode(v); const del=document.createElement('span');
+  del.className='tag-del'; del.textContent='×';
+  del.addEventListener('click',e=>{e.stopPropagation();if(t.classList.contains('sel'))S[f]='';t.remove();});
+  t.appendChild(txt); t.appendChild(del); t.addEventListener('click',()=>one(f,t)); return t;
+}
+function makeCustomMany(f,v,max){
+  const t=document.createElement('span'); t.className='tag custom-tag sel';
+  const txt=document.createTextNode(v); const del=document.createElement('span');
+  del.className='tag-del'; del.textContent='×';
+  del.addEventListener('click',e=>{e.stopPropagation();S[f]=S[f].filter(x=>x!==v);t.remove();});
+  t.appendChild(txt); t.appendChild(del);
+  t.addEventListener('click',e=>{if(e.target===del)return;many(f,t,max);}); return t;
+}
+
+/* ── PROMPT BUILDER ──
+   Instrui a IA receptora sobre o que fazer quando o aluno
+   deu pouca informação — pedir mais — e quando deu info
+   suficiente — enriquecer sem inventar. */
+function buildPrompt(){
+  const sc = SCENES[S.scene];
+
+  // Assess how much the student filled in
+  const hasSetor   = S.setor.trim().length > 3;
+  const hasCtx     = S.ctx.trim().length > 20;
+  const ctxShort   = S.ctx.trim().length > 0 && S.ctx.trim().length <= 20;
+
+  const setorLine  = hasSetor  ? `\nO QUE O ALUNO FAZ OU VENDE: ${S.setor}` : '';
+  const ctxSection = hasCtx
+    ? `\nCONTEXTO DA SITUAÇÃO:\n${S.ctx}`
+    : ctxShort
+      ? `\nCONTEXTO DA SITUAÇÃO (incompleto — veja instrução abaixo):\n${S.ctx}`
+      : '';
+
+  // Instructions for the receiving AI based on data quality
+  let instrucao = '';
+  if (!hasCtx) {
+    instrucao = `
+INSTRUÇÃO PARA A IA RECEPTORA:
+O aluno preencheu pouca ou nenhuma informação de contexto. Antes de iniciar o roleplay, faça até 3 perguntas curtas e objetivas para entender melhor a situação real — quem é a outra pessoa, qual o histórico, o que está travando. Use as respostas para tornar a simulação mais fiel à realidade do aluno. Só inicie o roleplay após ter informações suficientes.`;
+  } else if (ctxShort) {
+    instrucao = `
+INSTRUÇÃO PARA A IA RECEPTORA:
+O contexto fornecido é muito breve. Faça 1 ou 2 perguntas de aprofundamento antes de iniciar — sem exagerar. Com as respostas, enriqueça o cenário (sem inventar) e então comece o roleplay.`;
+  } else {
+    instrucao = `
+INSTRUÇÃO PARA A IA RECEPTORA:
+O aluno trouxe contexto suficiente. Use todas as informações acima para tornar a simulação o mais fiel possível à situação real. Não invente dados que não foram fornecidos. Se algo relevante ainda estiver vago, faça no máximo 1 pergunta de esclarecimento antes de começar.`;
+  }
+
+  const lines = [];
+  lines.push(`CENÁRIO: ${sc.lbl}`);
+  lines.push(`DESCRIÇÃO: ${sc.ctx}`);
+  lines.push('');
+  lines.push(`PERFIL DA OUTRA PESSOA`);
+  lines.push(`Cargo / papel: ${S.cargo}`);
+  lines.push(`Comportamento: ${S.pers.join(', ')}`);
+  if (setorLine) lines.push(setorLine);
+  lines.push('');
+  lines.push(`OBJETIVO DO ALUNO NESSA CONVERSA`);
+  lines.push(S.obj);
+  if (ctxSection) lines.push(ctxSection);
+  lines.push('');
+  lines.push('---');
+  lines.push(instrucao.trim());
+
+  document.getElementById('ptxt').textContent = lines.join('\n');
+}
+
+function resetLaunch(){
+  hasCopied=false;
+  document.getElementById('cicon').textContent='📋';
+  document.getElementById('clabel').textContent='Clique aqui e copie o texto da simulação';
+  document.getElementById('bcopy').className='btn-copy';
+  const bo=document.getElementById('bopen');
+  bo.className='btn-open'; bo.style.cursor='default';
+  document.getElementById('oicon').textContent='↗';
+  document.getElementById('olabel').textContent='Abrir o Simulador Voicer e colar o texto lá';
+  document.getElementById('lbl1').className='step-label active-lbl';
+  document.getElementById('lbl2').className='step-label';
+}
+
+function cpCopy(){
+  navigator.clipboard.writeText(document.getElementById('ptxt').textContent).then(()=>{
+    hasCopied=true;
+    document.getElementById('cicon').textContent='✅';
+    document.getElementById('clabel').textContent='Copiado!';
+    document.getElementById('bcopy').className='btn-copy copied';
+    const bo=document.getElementById('bopen');
+    bo.className='btn-open ready'; bo.style.cursor='pointer';
+    document.getElementById('olabel').textContent='Agora clique aqui e abra o Simulador Voicer e cole o texto lá';
+    document.getElementById('lbl1').className='step-label done-lbl';
+    document.getElementById('lbl2').className='step-label active-lbl';
+  });
+}
+</script>
+</body>
+</html>
